@@ -1,0 +1,113 @@
+-- Create the database
+CREATE DATABASE OnlineLearning;
+USE OnlineLearning;
+
+-- Students table
+CREATE TABLE Students (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    enrollment_date DATE NOT NULL
+);
+
+-- Instructors table
+CREATE TABLE Instructors (
+    instructor_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    department VARCHAR(100) NOT NULL
+);
+
+-- Courses table
+CREATE TABLE Courses (
+    course_id INT AUTO_INCREMENT PRIMARY KEY,
+    course_name VARCHAR(150) NOT NULL,
+    instructor_id INT,
+    credits INT CHECK (credits > 0), -- Ensuring credits are positive
+    FOREIGN KEY (instructor_id) REFERENCES Instructors(instructor_id) ON DELETE SET NULL
+);
+
+-- Enrollments table (Many-to-Many: Students & Courses)
+CREATE TABLE Enrollments (
+    enrollment_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT,
+    course_id INT,
+    enrollment_date DATE NOT NULL,
+    FOREIGN KEY (student_id) REFERENCES Students(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES Courses(course_id) ON DELETE CASCADE
+);
+
+-- Assignments table (Each course has multiple assignments)
+CREATE TABLE Assignments (
+    assignment_id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT,
+    title VARCHAR(200) NOT NULL,
+    due_date DATE NOT NULL,
+    FOREIGN KEY (course_id) REFERENCES Courses(course_id) ON DELETE CASCADE
+);
+
+-- Submissions table (Students submit assignments)
+CREATE TABLE Submissions (
+    submission_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT,
+    assignment_id INT,
+    submission_date DATE NOT NULL,
+    grade DECIMAL(5,2) CHECK (grade >= 0 AND grade <= 100), -- Ensuring valid grades
+    FOREIGN KEY (student_id) REFERENCES Students(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (assignment_id) REFERENCES Assignments(assignment_id) ON DELETE CASCADE
+);
+-- Insert sample students
+INSERT INTO Students (name, email, enrollment_date) VALUES
+('Alice Johnson', 'alice@example.com', '2024-01-10'),
+('Bob Smith', 'bob@example.com', '2024-02-15');
+
+-- Insert sample instructors
+INSERT INTO Instructors (name, email, department) VALUES
+('Dr. John Doe', 'johndoe@example.com', 'Computer Science'),
+('Prof. Sarah Lee', 'sarahlee@example.com', 'Mathematics');
+
+-- Insert sample courses
+INSERT INTO Courses (course_name, instructor_id, credits) VALUES
+('Database Management', 1, 4),
+('Data Structures', 1, 3),
+('Calculus 101', 2, 4);
+
+-- Enroll students in courses
+INSERT INTO Enrollments (student_id, course_id, enrollment_date) VALUES
+(1, 1, '2024-02-20'),
+(1, 2, '2024-02-20'),
+(2, 1, '2024-03-05'),
+(2, 3, '2024-03-10');
+
+-- Insert assignments
+INSERT INTO Assignments (course_id, title, due_date) VALUES
+(1, 'SQL Basics Homework', '2024-04-01'),
+(2, 'Data Structures Quiz', '2024-04-05'),
+(3, 'Calculus Exam', '2024-04-10');
+
+-- Insert assignment submissions
+INSERT INTO Submissions (student_id, assignment_id, submission_date, grade) VALUES
+(1, 1, '2024-03-30', 85),
+(2, 1, '2024-03-31', 90),
+(1, 2, '2024-04-03', 78),
+(2, 3, '2024-04-09', 88);
+SELECT s.name AS Student, c.course_name AS Course
+FROM Students s
+JOIN Enrollments e ON s.student_id = e.student_id
+JOIN Courses c ON e.course_id = c.course_id;
+SELECT a.title, a.due_date 
+FROM Assignments a
+JOIN Courses c ON a.course_id = c.course_id
+WHERE c.course_name = 'Database Management';
+SELECT s.name AS Student, a.title AS Assignment, sub.grade
+FROM Submissions sub
+JOIN Students s ON sub.student_id = s.student_id
+JOIN Assignments a ON sub.assignment_id = a.assignment_id
+ORDER BY sub.grade DESC;
+SELECT s.name AS Student, a.title AS Assignment
+FROM Students s
+JOIN Enrollments e ON s.student_id = e.student_id
+JOIN Courses c ON e.course_id = c.course_id
+JOIN Assignments a ON c.course_id = a.course_id
+LEFT JOIN Submissions sub ON s.student_id = sub.student_id AND a.assignment_id = sub.assignment_id
+WHERE sub.submission_id IS NULL;
