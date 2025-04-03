@@ -1,0 +1,48 @@
+-- INNER JOIN: Show students and the courses they are enrolled in
+-- This query combines information from Students, Enrollments, and Courses tables
+SELECT s.name AS Student, c.course_name AS Course
+FROM Students s
+INNER JOIN Enrollments e ON s.student_id = e.student_id  -- Join Students with Enrollments
+INNER JOIN Courses c ON e.course_id = c.course_id;        -- Join Enrollments with Courses
+
+-- LEFT JOIN: Show students and their assignments, including those who haven't submitted
+-- This query combines Students, Enrollments, Courses, Assignments, and Submissions
+SELECT s.name AS Student, a.title AS Assignment, sub.grade
+FROM Students s
+LEFT JOIN Enrollments e ON s.student_id = e.student_id      -- Join Students with Enrollments
+LEFT JOIN Courses c ON e.course_id = c.course_id            -- Join Enrollments with Courses
+LEFT JOIN Assignments a ON c.course_id = a.course_id        -- Join Courses with Assignments
+LEFT JOIN Submissions sub ON s.student_id = sub.student_id AND a.assignment_id = sub.assignment_id;  -- Join Submissions with Students and Assignments
+
+-- UPDATE Query: Update the grade for Alice's 'SQL Basics Homework' to 90
+-- This query updates the grade of a specific submission in the Submissions table
+UPDATE Submissions
+SET grade = 90
+WHERE student_id = 1 AND assignment_id = 1;  -- Find submission for Alice and 'SQL Basics Homework'
+-- DELETE Query: Delete Bob's enrollment in the "Database Management" course
+-- This query deletes an enrollment record in the Enrollments table
+DELETE FROM Enrollments
+WHERE student_id = 2 AND course_id = 1;  -- Delete enrollment for Bob (student_id = 2) in the course 'Database Management' (course_id = 1)
+
+-- Aggregation Query: Count how many students are enrolled in each course and filter courses with more than 1 student
+-- This query groups the students by course and counts how many students are in each course, 
+-- then filters out courses with only one student
+SELECT c.course_name, COUNT(e.student_id) AS student_count
+FROM Courses c
+JOIN Enrollments e ON c.course_id = e.course_id    -- Join Courses with Enrollments
+GROUP BY c.course_name                             -- Group results by course
+HAVING COUNT(e.student_id) > 1;                    -- Only show courses with more than one student
+
+-- Subquery: Find students who submitted their assignments before the due date for the "Database Management" course
+-- This query checks if the submission date is earlier than the due date of the respective assignment
+SELECT s.name AS Student, a.title AS Assignment, sub.submission_date
+FROM Students s
+JOIN Enrollments e ON s.student_id = e.student_id
+JOIN Courses c ON e.course_id = c.course_id
+JOIN Assignments a ON c.course_id = a.course_id
+JOIN Submissions sub ON s.student_id = sub.student_id AND a.assignment_id = sub.assignment_id
+WHERE sub.submission_date < (  -- Subquery checks if the submission date is earlier than the assignment due date
+  SELECT a.due_date 
+  FROM Assignments a 
+  WHERE a.course_id = c.course_id LIMIT 1  -- Retrieve the due date of the first assignment in the course
+);
