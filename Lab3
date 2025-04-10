@@ -1,0 +1,49 @@
+-- Lab 4: Advanced SQL Operations
+-- Online Learning Platform
+
+-- 1. Create VIEW (hide sensitive info)
+CREATE VIEW student_overview AS
+SELECT student_id, name, enrollment_date
+FROM Students;
+
+-- 2. Add INTEGRITY CONSTRAINTS
+ALTER TABLE Enrollments
+ADD CONSTRAINT chk_enroll_date CHECK (enrollment_date >= '2023-01-01');
+
+ALTER TABLE Instructors
+MODIFY department VARCHAR(100) NOT NULL;
+
+-- 3. Create INDEX
+CREATE INDEX idx_submissions_student_assignment 
+ON Submissions(student_id, assignment_id);
+
+-- Test index (optional)
+EXPLAIN SELECT * 
+FROM Submissions 
+WHERE student_id = 1 AND assignment_id = 1;
+
+-- 4. TRANSACTION
+START TRANSACTION;
+
+INSERT INTO Students (name, email, enrollment_date)
+VALUES ('Charlie Green', 'charlie@example.com', '2024-04-09');
+
+INSERT INTO Enrollments (student_id, course_id, enrollment_date)
+VALUES (LAST_INSERT_ID(), 2, '2024-04-09');
+
+ROLLBACK;
+
+SELECT * FROM Students WHERE name = 'Charlie Green';
+
+-- 5. Complex QUERY
+SELECT s.name AS Student, AVG(sub.grade) AS average_grade
+FROM Students s
+JOIN Submissions sub ON s.student_id = sub.student_id
+GROUP BY s.name
+HAVING AVG(sub.grade) > (
+    SELECT AVG(grade) FROM Submissions
+);
+
+-- BONUS: Create read-only user and grant access
+CREATE USER 'readonly_user'@'localhost' IDENTIFIED BY 'readonly123';
+GRANT SELECT ON OnlineLearning.student_overview TO 'readonly_user'@'localhost';
